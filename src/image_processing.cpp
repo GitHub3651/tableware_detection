@@ -9,9 +9,6 @@
 using namespace cv;
 using namespace std;
 
-// 全局变量定义
-bool g_isOK = false;
-
 // 图像缩放函数 - 按指定比例缩放图像
 Mat resizeImageByScale(const Mat &originalImage, double scale)
 {
@@ -39,38 +36,23 @@ Mat resizeImageByScale(const Mat &originalImage, double scale)
     return resizedImage;
 }
 
-// HSV二值分割函数 - 基于H和S通道条件
+// 方案A：预编译优化的多HSV二值分割函数
 Mat createHueBinaryMask(const Mat &hsvImage)
 {
-    // 分离HSV通道
-    vector<Mat> hsvChannels;
-    split(hsvImage, hsvChannels);
-    Mat hChannel = hsvChannels[0]; // H通道 (Hue) 0-179
-    Mat sChannel = hsvChannels[1]; // S通道 (Saturation) 0-255
+    Mat result = Mat::zeros(hsvImage.size(), CV_8UC1);
 
-    Mat binaryMask = Mat::zeros(hsvImage.size(), CV_8UC1);
-
-    // 新的二值化条件：s>150且h值在8-20之间的置为1（白色255），其他置为0（黑色）
-    for (int i = 0; i < hChannel.rows; i++)
+    // 编译器会完全展开这个循环，实现最佳性能
+    for (int i = 0; i < Config::RANGE_COUNT; ++i)
     {
-        for (int j = 0; j < hChannel.cols; j++)
-        {
-            uchar hValue = hChannel.at<uchar>(i, j);
-            uchar sValue = sChannel.at<uchar>(i, j);
-
-            // 如果满足条件：S > 阈值 且 H 在指定范围内
-            if (sValue > Config::HSV_S_MIN && hValue >= Config::HSV_H_MIN && hValue <= Config::HSV_H_MAX)
-            {
-                binaryMask.at<uchar>(i, j) = 255; // 满足条件的区域置为白色
-            }
-            else
-            {
-                binaryMask.at<uchar>(i, j) = 0; // 其他区域置为黑色
-            }
-        }
+        Mat mask;
+        inRange(hsvImage,
+                Scalar(Config::HSV_RANGES[i][0], Config::HSV_RANGES[i][2], Config::HSV_RANGES[i][4]),
+                Scalar(Config::HSV_RANGES[i][1], Config::HSV_RANGES[i][3], Config::HSV_RANGES[i][5]),
+                mask);
+        result |= mask;
     }
 
-    return binaryMask;
+    return result;
 }
 
 // 形态学处理函数
@@ -179,72 +161,6 @@ Mat filterConnectedComponentsByPercent(const Mat &binaryImage, double minPercent
             result.setTo(0, mask);
         }
     }
-
-    return result;
-}
-
-// 找到白色像素最多的列并绘制
-Mat findAndDrawMaxColumn(const Mat &binaryImage, const Mat &originalImage)
-{
-    Mat result = originalImage.clone();
-
-    // 统计每列的白色像素数量
-    vector<int> columnCounts(binaryImage.cols, 0);
-    for (int col = 0; col < binaryImage.cols; col++)
-    {
-        for (int row = 0; row < binaryImage.rows; row++)
-        {
-            if (binaryImage.at<uchar>(row, col) == 255)
-            {
-                columnCounts[col]++;
-            }
-        }
-    }
-
-    // 找到白色像素最多的列
-    int maxCol = 0;
-    int maxCount = columnCounts[0];
-    for (int col = 1; col < binaryImage.cols; col++)
-    {
-        if (columnCounts[col] > maxCount)
-        {
-            maxCount = columnCounts[col];
-            maxCol = col;
-        }
-    }
-
-    // 在原图上画出这一列（绿色线）
-    line(result, Point(maxCol, 0), Point(maxCol, binaryImage.rows - 1), Scalar(0, 255, 0), 3);
-
-    // OK/NG判定逻辑
-    int totalPixelsInColumn = binaryImage.rows;                 // 列像素总量
-    double pixelRatio = (double)maxCount / totalPixelsInColumn; // 像素比例
-
-    int centerCol = binaryImage.cols / 2;                                                 // 图像中心列坐标
-    int colDistance = maxCol - centerCol;                                                 // 最大列与中心的距离（保留符号：负值表示偏左，正值表示偏右）
-    double minAllowedDistance = Config::POSITION_OFFSET_MIN_THRESHOLD * binaryImage.cols; // 允许的最小偏移
-    double maxAllowedDistance = Config::POSITION_OFFSET_MAX_THRESHOLD * binaryImage.cols; // 允许的最大偏移
-
-    // 判定条件：
-    // 1. 最大像素列的1数量 >= 像素密度阈值 * 列像素总量
-    // 2. 最小偏移阈值 <= 最大像素列坐标 - 中间坐标 <= 最大偏移阈值 (偏移必须在设定范围内)
-    bool condition1 = pixelRatio >= Config::PIXEL_RATIO_THRESHOLD;
-    bool condition2 = (colDistance >= minAllowedDistance) && (colDistance <= maxAllowedDistance); // 偏移条件：在设定范围内
-    bool isOK = condition1 && condition2;
-
-    // 保存结果到全局变量
-    g_isOK = isOK;
-
-    // 计算偏移百分比
-    double offsetPercentage = (double)colDistance / binaryImage.cols * 100;
-
-    // Print detailed information to console
-    cout << "Max white pixel column: " << maxCol << " (Count: " << maxCount << " pixels)" << endl;
-    cout << "Pixel ratio: " << (pixelRatio * 100) << "% (Required: >= " << (Config::PIXEL_RATIO_THRESHOLD * 100) << "%)" << endl;
-    cout << "Center offset: " << offsetPercentage << "% (Range: " << (Config::POSITION_OFFSET_MIN_THRESHOLD * 100) << "% ~ " << (Config::POSITION_OFFSET_MAX_THRESHOLD * 100) << "%)" << endl;
-    cout << "Condition 1 (Pixel ratio >= " << (Config::PIXEL_RATIO_THRESHOLD * 100) << "%): " << (condition1 ? "PASS" : "FAIL") << endl;
-    cout << "Condition 2 (Offset in range " << (Config::POSITION_OFFSET_MIN_THRESHOLD * 100) << "% ~ " << (Config::POSITION_OFFSET_MAX_THRESHOLD * 100) << "%): " << (condition2 ? "PASS" : "FAIL") << endl;
-    cout << "Final Result: " << (isOK ? "OK" : "NG") << endl;
 
     return result;
 }

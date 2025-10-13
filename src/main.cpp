@@ -36,10 +36,10 @@ int main(int argc, char *argv[])
 
     string imagePath = argv[1];
 
-    // Start timing from image reading
-    auto algorithmStart = chrono::steady_clock::now();
+    // 开始总计时
+    auto totalStart = chrono::steady_clock::now();
 
-    // Read input image
+    // 读取图像
     Mat originalImage = imread(imagePath, IMREAD_COLOR);
 
     // Check if image is loaded successfully
@@ -50,6 +50,9 @@ int main(int argc, char *argv[])
         system("pause");
         return -1;
     }
+
+    // 算法开始计时
+    auto algorithmStart = chrono::steady_clock::now();
 
     // Resize image to specified scale for processing using image processing module
     Mat rgbImage = resizeImageByScale(originalImage, Config::RESIZE_SCALE);
@@ -80,29 +83,28 @@ int main(int argc, char *argv[])
     // 4. 连通域百分比过滤处理（基于全图面积百分比过滤）
     Mat finalResult = filterConnectedComponentsByPercent(contourFilled, Config::CONNECTED_COMPONENT_PERCENT);
 
-    // 5. 找到白色像素最多的列并绘制，进行OK/NG判定
-    Mat maxColumnResult = findAndDrawMaxColumn(finalResult, rgbImage);
-
     // 算法处理完成，记录结束时间
     auto algorithmEnd = chrono::steady_clock::now();
-    int totalMs = chrono::duration_cast<chrono::milliseconds>(algorithmEnd - algorithmStart).count();
+    auto totalEnd = chrono::steady_clock::now();
 
-    // 在控制台输出总处理时间
-    cout << "Total processing time: " << totalMs << "ms" << endl;
+    // 计算耗时
+    int algorithmMs = chrono::duration_cast<chrono::milliseconds>(algorithmEnd - algorithmStart).count();
+    int totalMs = chrono::duration_cast<chrono::milliseconds>(totalEnd - totalStart).count();
 
-    // =====================================================
+    // 在控制台输出处理时间
+    cout << "Algorithm time: " << algorithmMs << "ms" << endl;
+    cout << "Total time: " << totalMs << "ms" << endl; // =====================================================
     // 结果显示
     // =====================================================
 
-    // 显示7张图片：原图，缩放图，HSV图，二值图，形态学处理，连通域过滤，列检测结果
+    // 显示6张图片：原图，缩放图，HSV图，二值图，形态学处理，连通域过滤
     vector<Mat> displayImages = {
         originalImage,  // 1. 原始BGR图像（未缩放）
         rgbImage,       // 2. 缩放后的BGR图像
         hsvImage,       // 3. HSV图像
         originalBinary, // 4. 二值化图像
         morphProcessed, // 5. 形态学处理结果
-        finalResult,    // 6. 连通域百分比过滤结果
-        maxColumnResult // 7. 列检测结果
+        finalResult     // 6. 连通域百分比过滤结果
     };
 
     vector<string> displayTitles = {
@@ -111,21 +113,16 @@ int main(int argc, char *argv[])
         "3. HSV Image",
         "4. Binary Mask",
         "5. Morphological",
-        "6. Connected Filter",
-        "7. Max Column"};
+        "6. Final Result"};
 
     // 创建subplot显示 (3行3列布局，第8、9个位置留空)
     Mat subplotCanvas = createSubplotDisplay(displayImages, displayTitles, 3, 3);
 
-    // 在画布上显示算法处理时间
-    putText(subplotCanvas, "Time: " + to_string(totalMs) + "ms", Point(10, 30),
-            FONT_HERSHEY_SIMPLEX, 0.8, Scalar(0, 255, 0), 2);
-
-    // 在画布右上角显示OK/NG结果
-    string resultText = g_isOK ? "OK" : "NG";
-    Scalar resultColor = g_isOK ? Scalar(0, 200, 0) : Scalar(0, 0, 200); // OK绿色，NG红色
-    putText(subplotCanvas, resultText, Point(subplotCanvas.cols - 100, 30),
-            FONT_HERSHEY_SIMPLEX, 1.2, resultColor, 3);
+    // 在画布上显示两个关键处理时间
+    putText(subplotCanvas, "Total Time: " + to_string(totalMs) + "ms", Point(10, 30),
+            FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 255, 0), 2);
+    putText(subplotCanvas, "Algorithm Only: " + to_string(algorithmMs) + "ms", Point(10, 60),
+            FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 200, 200), 2);
 
     // 显示主要结果窗口
     namedWindow("HSV and Morphological Processing", WINDOW_AUTOSIZE);
