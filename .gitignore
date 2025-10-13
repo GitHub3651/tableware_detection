@@ -1,0 +1,188 @@
+# 编译输出目录
+build/
+bin/
+lib/
+out/
+
+# OpenCV目录 (第三方库，不需要版本控制)
+opencv/
+opencv/**
+
+# CMake生成的文件
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+
+# Visual Studio生成的文件
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.suo
+*.user
+*.aps
+*.pch
+*.vspscc
+*_i.c
+*_p.c
+*.ncb
+*.tlb
+*.tlh
+*.bak
+*.cache
+*.ilk
+*.log
+*.dll
+*.lib
+*.sbr
+*.pdb
+*.idb
+*.res
+*.pch
+*.suo
+*.tmp
+*.tmpproj
+*.log
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.log
+*.scc
+
+# 可执行文件
+*.exe
+*.out
+*.app
+
+# 调试文件
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# 对象文件
+*.o
+*.ko
+*.obj
+*.elf
+
+# 链接器输出
+*.ilk
+*.map
+*.exp
+
+# 预编译头文件
+*.gch
+*.pch
+
+# 库文件
+*.lib
+*.a
+*.la
+*.lo
+*.def
+*.exp
+
+# 共享对象文件
+*.so
+*.so.*
+*.dylib
+
+# 可执行文件
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug文件
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# 内核模块编译结果
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# IDE文件
+.vscode/
+.vs/
+*.swp
+*.swo
+*~
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+*.old
+
+# 图像输出文件（程序生成的结果）
+hsv_*
+h_channel_*
+s_channel_*
+v_channel_*
+morphological_processing_*.jpg
+binary_mask_*.jpg
+morphological_*.jpg
+final_result_*.jpg
+
+# 测试图像（如果不想提交的话）
+# test_images/
+# samples/
+
+# 日志文件
+*.log
+
+# 包管理器
+vcpkg_installed/
+packages/
+
+# Qt相关
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.moc
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+*.qmlc
+*.jsc
+Makefile*
+*build-*
+
+# Conan
+conanfile.txt
+conaninfo.txt
+conanbuildinfo.*
+conan.lock
+
+# 系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows系统文件
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
