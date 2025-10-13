@@ -13,52 +13,42 @@ using namespace std;
 // 全局变量定义
 Mat g_hsvImage;
 Mat g_originalImage;
-Mat g_displayImage;
+
+// 创建扩展画布的辅助函数
+Mat createExtendedCanvas(const Mat &image, const string &text1, const string &text2, const string &text3)
+{
+    const int infoHeight = 60;
+    Mat canvas = Mat::zeros(image.rows + infoHeight, image.cols, CV_8UC3);
+    image.copyTo(canvas(Rect(0, 0, image.cols, image.rows)));
+    rectangle(canvas, Point(0, image.rows), Point(image.cols, image.rows + infoHeight), Scalar(40, 40, 40), -1);
+    putText(canvas, text1, Point(10, image.rows + 15), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 255), 1);
+    putText(canvas, text2, Point(10, image.rows + 30), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 255), 1);
+    putText(canvas, text3, Point(10, image.rows + 45), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 255), 1);
+    return canvas;
+}
 
 // 鼠标回调函数 - 显示HSV值
 void onMouse(int event, int x, int y, int flags, void *userdata)
 {
     if (x >= 0 && y >= 0 && x < g_hsvImage.cols && y < g_hsvImage.rows)
     {
-        // 获取HSV值
+        // 获取像素值
         Vec3b hsvPixel = g_hsvImage.at<Vec3b>(y, x);
-        int h = hsvPixel[0]; // H通道 (0-179)
-        int s = hsvPixel[1]; // S通道 (0-255)
-        int v = hsvPixel[2]; // V通道 (0-255)
-
-        // 获取原始BGR值
         Vec3b bgrPixel = g_originalImage.at<Vec3b>(y, x);
-        int b = bgrPixel[0];
-        int g = bgrPixel[1];
-        int r = bgrPixel[2];
 
-        // 创建显示图像的副本
-        g_displayImage = g_originalImage.clone();
+        // 创建带十字标记的图像
+        Mat displayImg = g_originalImage.clone();
+        line(displayImg, Point(x - 10, y), Point(x + 10, y), Scalar(0, 255, 0), 2);
+        line(displayImg, Point(x, y - 10), Point(x, y + 10), Scalar(0, 255, 0), 2);
 
-        // 在图像上绘制十字标记
-        line(g_displayImage, Point(x - 10, y), Point(x + 10, y), Scalar(0, 255, 0), 2);
-        line(g_displayImage, Point(x, y - 10), Point(x, y + 10), Scalar(0, 255, 0), 2);
+        // 生成信息文字
+        string pos = "Pos:(" + to_string(x) + "," + to_string(y) + ")";
+        string hsv = "HSV:(" + to_string(hsvPixel[0]) + "," + to_string(hsvPixel[1]) + "," + to_string(hsvPixel[2]) + ")";
+        string rgb = "RGB:(" + to_string(bgrPixel[2]) + "," + to_string(bgrPixel[1]) + "," + to_string(bgrPixel[0]) +
+                     ") Gray:" + to_string((int)(0.299 * bgrPixel[2] + 0.587 * bgrPixel[1] + 0.114 * bgrPixel[0]));
 
-        // 计算灰度值
-        int gray = (int)(0.299 * r + 0.587 * g + 0.114 * b);
-
-        // 创建扩展画布：图像 + 底部信息区域
-        int infoHeight = 60;
-        Mat canvas = Mat::zeros(g_displayImage.rows + infoHeight, g_displayImage.cols, CV_8UC3);
-
-        // 复制图像到画布上部
-        g_displayImage.copyTo(canvas(Rect(0, 0, g_displayImage.cols, g_displayImage.rows)));
-
-        // 信息区域背景
-        rectangle(canvas, Point(0, g_displayImage.rows), Point(g_displayImage.cols, g_displayImage.rows + infoHeight), Scalar(40, 40, 40), -1);
-
-        // 分行显示文字
-        putText(canvas, "Pos:(" + to_string(x) + "," + to_string(y) + ")", Point(10, g_displayImage.rows + 15), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 255), 1);
-        putText(canvas, "HSV:(" + to_string(h) + "," + to_string(s) + "," + to_string(v) + ")", Point(10, g_displayImage.rows + 30), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 255), 1);
-        putText(canvas, "RGB:(" + to_string(r) + "," + to_string(g) + "," + to_string(b) + ") Gray:" + to_string(gray), Point(10, g_displayImage.rows + 45), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 255), 1);
-
-        // 更新显示
-        imshow("HSV Color Analysis - Move mouse to see values", canvas);
+        // 显示扩展画布
+        imshow("HSV Color Analysis - Move mouse to see values", createExtendedCanvas(displayImg, pos, hsv, rgb));
     }
 }
 
@@ -145,33 +135,21 @@ Mat createSubplotDisplay(const vector<Mat> &images,
 // 显示交互式颜色分析窗口
 void showColorAnalysis(const Mat &hsvImage, const Mat &originalImage)
 {
+    const string windowName = "HSV Color Analysis - Move mouse to see values";
+
     // 设置全局变量
     g_hsvImage = hsvImage.clone();
     g_originalImage = originalImage.clone();
-    g_displayImage = originalImage.clone();
 
-    // 创建颜色分析窗口
-    namedWindow("HSV Color Analysis - Move mouse to see values", WINDOW_AUTOSIZE);
+    // 创建窗口并设置位置
+    namedWindow(windowName, WINDOW_AUTOSIZE);
+    moveWindow(windowName, 300, 200);
+    setMouseCallback(windowName, onMouse, nullptr);
 
-    // 设置窗口位置到屏幕中心区域，避免窗口消失在左上角
-    moveWindow("HSV Color Analysis - Move mouse to see values", 300, 200);
-
-    // 设置鼠标回调函数
-    setMouseCallback("HSV Color Analysis - Move mouse to see values", onMouse, nullptr);
-
-    // 创建初始扩展画布
-    int infoHeight = 60;
-    Mat initialCanvas = Mat::zeros(g_originalImage.rows + infoHeight, g_originalImage.cols, CV_8UC3);
-    g_originalImage.copyTo(initialCanvas(Rect(0, 0, g_originalImage.cols, g_originalImage.rows)));
-    rectangle(initialCanvas, Point(0, g_originalImage.rows), Point(g_originalImage.cols, g_originalImage.rows + infoHeight), Scalar(40, 40, 40), -1);
-    putText(initialCanvas, "Move mouse over image to see HSV values", Point(10, g_originalImage.rows + 30), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(200, 200, 200), 1);
-
-    // 初始显示
-    imshow("HSV Color Analysis - Move mouse to see values", initialCanvas);
+    // 显示初始画布
+    imshow(windowName, createExtendedCanvas(originalImage, "", "Move mouse over image to see HSV values", ""));
 
     // 等待用户交互
     waitKey(0);
-
-    // 关闭颜色分析窗口
-    destroyWindow("HSV Color Analysis - Move mouse to see values");
+    destroyWindow(windowName);
 }

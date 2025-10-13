@@ -22,6 +22,5 @@ void showColorAnalysis(const Mat &hsvImage, const Mat &originalImage);
 // 全局变量声明
 extern Mat g_hsvImage;
 extern Mat g_originalImage;
-extern Mat g_displayImage;
 
 #endif // DISPLAY_H
