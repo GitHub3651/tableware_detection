@@ -21,6 +21,9 @@ namespace Config
     constexpr double PIXEL_RATIO_THRESHOLD = 0.4;          // （最多1的一列占整个宽的比例） (40%)
     constexpr double POSITION_OFFSET_MIN_THRESHOLD = 0.0;  // 最小位置偏移阈值 (0%)
     constexpr double POSITION_OFFSET_MAX_THRESHOLD = 0.15; // 最大位置偏移阈值 (15%)
+
+    // 图像缩放参数
+    constexpr double RESIZE_SCALE = 0.1; // 图像缩放比例 (缩放到原尺寸的10%)
 }
 
 #endif // CONFIG_CONSTANTS_H

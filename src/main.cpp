@@ -40,16 +40,19 @@ int main(int argc, char *argv[])
     auto algorithmStart = chrono::steady_clock::now();
 
     // Read input image
-    Mat rgbImage = imread(imagePath, IMREAD_COLOR);
+    Mat originalImage = imread(imagePath, IMREAD_COLOR);
 
     // Check if image is loaded successfully
-    if (rgbImage.empty())
+    if (originalImage.empty())
     {
         cerr << "Error: Cannot load image " << imagePath << endl;
         cerr << "Please check if the file path is correct" << endl;
         system("pause");
         return -1;
     }
+
+    // Resize image to specified scale for processing using image processing module
+    Mat rgbImage = resizeImageByScale(originalImage, Config::RESIZE_SCALE);
 
     // Create HSV image storage variable
     Mat hsvImage;
@@ -91,23 +94,25 @@ int main(int argc, char *argv[])
     // 结果显示
     // =====================================================
 
-    // 显示6张图片：原图，HSV图，二值图，形态学处理，连通域过滤，列检测结果
+    // 显示7张图片：原图，缩放图，HSV图，二值图，形态学处理，连通域过滤，列检测结果
     vector<Mat> displayImages = {
-        rgbImage,       // 1. 原始BGR图像
-        hsvImage,       // 2. HSV图像
-        originalBinary, // 3. 二值化图像
-        morphProcessed, // 4. 形态学处理结果
-        finalResult,    // 5. 连通域百分比过滤结果
-        maxColumnResult // 6. 列检测结果
+        originalImage,  // 1. 原始BGR图像（未缩放）
+        rgbImage,       // 2. 缩放后的BGR图像
+        hsvImage,       // 3. HSV图像
+        originalBinary, // 4. 二值化图像
+        morphProcessed, // 5. 形态学处理结果
+        finalResult,    // 6. 连通域百分比过滤结果
+        maxColumnResult // 7. 列检测结果
     };
 
     vector<string> displayTitles = {
         "1. Original Image",
-        "2. HSV Image",
-        "3. Binary Mask",
-        "4. Morphological",
-        "5. Connected Filter",
-        "6. Max Column"};
+        "2. Resized Image",
+        "3. HSV Image",
+        "4. Binary Mask",
+        "5. Morphological",
+        "6. Connected Filter",
+        "7. Max Column"};
 
     // 创建subplot显示 (3行3列布局，第8、9个位置留空)
     Mat subplotCanvas = createSubplotDisplay(displayImages, displayTitles, 3, 3);

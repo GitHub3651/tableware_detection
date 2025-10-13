@@ -12,6 +12,33 @@ using namespace std;
 // 全局变量定义
 bool g_isOK = false;
 
+// 图像缩放函数 - 按指定比例缩放图像
+Mat resizeImageByScale(const Mat &originalImage, double scale)
+{
+    if (originalImage.empty())
+    {
+        cerr << "Error: Empty input image for resizing" << endl;
+        return Mat();
+    }
+
+    // 计算新的尺寸
+    int newWidth = static_cast<int>(originalImage.cols * scale);
+    int newHeight = static_cast<int>(originalImage.rows * scale);
+
+    // 确保尺寸至少为1
+    newWidth = max(1, newWidth);
+    newHeight = max(1, newHeight);
+
+    Mat resizedImage;
+    resize(originalImage, resizedImage, Size(newWidth, newHeight), 0, 0, INTER_LINEAR);
+
+    cout << "Image resized from " << originalImage.cols << "x" << originalImage.rows
+         << " to " << resizedImage.cols << "x" << resizedImage.rows
+         << " (scale: " << scale << ")" << endl;
+
+    return resizedImage;
+}
+
 // HSV二值分割函数 - 基于H和S通道条件
 Mat createHueBinaryMask(const Mat &hsvImage)
 {

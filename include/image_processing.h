@@ -7,6 +7,9 @@
 using namespace cv;
 using namespace std;
 
+// 图像缩放函数
+Mat resizeImageByScale(const Mat &originalImage, double scale = 0.1);
+
 // HSV二值分割函数
 Mat createHueBinaryMask(const Mat &hsvImage);
 

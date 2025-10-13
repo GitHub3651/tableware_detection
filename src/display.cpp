@@ -42,18 +42,23 @@ void onMouse(int event, int x, int y, int flags, void *userdata)
         // 计算灰度值
         int gray = (int)(0.299 * r + 0.587 * g + 0.114 * b);
 
-        // 显示信息文本
-        string info = "Pos:(" + to_string(x) + "," + to_string(y) + ") ";
-        info += "HSV:(" + to_string(h) + "," + to_string(s) + "," + to_string(v) + ") ";
-        info += "RGB:(" + to_string(r) + "," + to_string(g) + "," + to_string(b) + ") ";
-        info += "Gray:" + to_string(gray);
+        // 创建扩展画布：图像 + 底部信息区域
+        int infoHeight = 60;
+        Mat canvas = Mat::zeros(g_displayImage.rows + infoHeight, g_displayImage.cols, CV_8UC3);
 
-        // 在图像上显示信息
-        rectangle(g_displayImage, Point(10, 10), Point(600, 50), Scalar(0, 0, 0), -1);
-        putText(g_displayImage, info, Point(15, 30), FONT_HERSHEY_SIMPLEX, 0.6, Scalar(0, 255, 255), 1);
+        // 复制图像到画布上部
+        g_displayImage.copyTo(canvas(Rect(0, 0, g_displayImage.cols, g_displayImage.rows)));
+
+        // 信息区域背景
+        rectangle(canvas, Point(0, g_displayImage.rows), Point(g_displayImage.cols, g_displayImage.rows + infoHeight), Scalar(40, 40, 40), -1);
+
+        // 分行显示文字
+        putText(canvas, "Pos:(" + to_string(x) + "," + to_string(y) + ")", Point(10, g_displayImage.rows + 15), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 255), 1);
+        putText(canvas, "HSV:(" + to_string(h) + "," + to_string(s) + "," + to_string(v) + ")", Point(10, g_displayImage.rows + 30), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 255), 1);
+        putText(canvas, "RGB:(" + to_string(r) + "," + to_string(g) + "," + to_string(b) + ") Gray:" + to_string(gray), Point(10, g_displayImage.rows + 45), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(0, 255, 255), 1);
 
         // 更新显示
-        imshow("HSV Color Analysis - Move mouse to see values", g_displayImage);
+        imshow("HSV Color Analysis - Move mouse to see values", canvas);
     }
 }
 
@@ -148,11 +153,21 @@ void showColorAnalysis(const Mat &hsvImage, const Mat &originalImage)
     // 创建颜色分析窗口
     namedWindow("HSV Color Analysis - Move mouse to see values", WINDOW_AUTOSIZE);
 
+    // 设置窗口位置到屏幕中心区域，避免窗口消失在左上角
+    moveWindow("HSV Color Analysis - Move mouse to see values", 300, 200);
+
     // 设置鼠标回调函数
     setMouseCallback("HSV Color Analysis - Move mouse to see values", onMouse, nullptr);
 
+    // 创建初始扩展画布
+    int infoHeight = 60;
+    Mat initialCanvas = Mat::zeros(g_originalImage.rows + infoHeight, g_originalImage.cols, CV_8UC3);
+    g_originalImage.copyTo(initialCanvas(Rect(0, 0, g_originalImage.cols, g_originalImage.rows)));
+    rectangle(initialCanvas, Point(0, g_originalImage.rows), Point(g_originalImage.cols, g_originalImage.rows + infoHeight), Scalar(40, 40, 40), -1);
+    putText(initialCanvas, "Move mouse over image to see HSV values", Point(10, g_originalImage.rows + 30), FONT_HERSHEY_SIMPLEX, 0.4, Scalar(200, 200, 200), 1);
+
     // 初始显示
-    imshow("HSV Color Analysis - Move mouse to see values", g_displayImage);
+    imshow("HSV Color Analysis - Move mouse to see values", initialCanvas);
 
     // 等待用户交互
     waitKey(0);
