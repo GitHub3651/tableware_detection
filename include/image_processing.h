@@ -13,6 +13,9 @@ Mat resizeImageByScale(const Mat &originalImage, double scale = 0.1);
 // 多HSV二值分割函数
 Mat createHueBinaryMask(const Mat &hsvImage);
 
+// LAB色彩空间二值分割函数
+Mat createLABBinaryMask(const Mat &bgrImage);
+
 // 形态学处理函数
 Mat performMorphological(const Mat &binaryImage);
 

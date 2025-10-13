@@ -55,6 +55,75 @@ Mat createHueBinaryMask(const Mat &hsvImage)
     return result;
 }
 
+// LAB色彩空间二值分割函数 - 专门检测白色和木色物体
+Mat createLABBinaryMask(const Mat &bgrImage)
+{
+    if (bgrImage.empty())
+    {
+        cerr << "Error: Empty input image for LAB conversion" << endl;
+        return Mat();
+    }
+
+    // 1. 转换到LAB色彩空间
+    Mat labImage;
+    cvtColor(bgrImage, labImage, COLOR_BGR2Lab);
+
+    // 2. 分离LAB通道
+    vector<Mat> labChannels;
+    split(labImage, labChannels);
+
+    Mat L = labChannels[0]; // 亮度通道 (0-255)
+    Mat A = labChannels[1]; // 红绿通道 (0-255, 128为中性)
+    Mat B = labChannels[2]; // 黄蓝通道 (0-255, 128为中性)
+
+    // 3. 白色物体检测
+    Mat whiteMask;
+    Mat L_white, A_white, B_white;
+
+    // 白色特征: 高亮度 + 接近中性的a/b值
+    inRange(L, Scalar(200), Scalar(255), L_white); // 高亮度
+    inRange(A, Scalar(122), Scalar(134), A_white); // 中性红绿 (128±6)
+    inRange(B, Scalar(120), Scalar(136), B_white); // 轻微偏黄可接受 (128±8)
+
+    // 白色 = 高亮度 AND 中性A AND 近中性B
+    bitwise_and(L_white, A_white, whiteMask);
+    bitwise_and(whiteMask, B_white, whiteMask);
+
+    // 4. 木色物体检测
+    Mat woodMask;
+    Mat L_wood, A_wood, B_wood;
+
+    // 木色特征: 中等亮度 + 偏红 + 偏黄
+    inRange(L, Scalar(100), Scalar(180), L_wood); // 中等亮度
+    inRange(A, Scalar(130), Scalar(145), A_wood); // 偏红 (>128)
+    inRange(B, Scalar(132), Scalar(155), B_wood); // 偏黄 (>128)
+
+    // 木色 = 中等亮度 AND 偏红 AND 偏黄
+    bitwise_and(L_wood, A_wood, woodMask);
+    bitwise_and(woodMask, B_wood, woodMask);
+
+    // 5. 合并两种检测结果
+    Mat finalMask;
+    bitwise_or(whiteMask, woodMask, finalMask);
+
+    // 6. 基本形态学处理去噪
+    Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(3, 3));
+    morphologyEx(finalMask, finalMask, MORPH_OPEN, kernel);  // 去除小噪声
+    morphologyEx(finalMask, finalMask, MORPH_CLOSE, kernel); // 填充小空洞
+
+    // 输出调试信息
+    int whitePixels = countNonZero(whiteMask);
+    int woodPixels = countNonZero(woodMask);
+    int totalPixels = countNonZero(finalMask);
+
+    cout << "LAB Detection Results:" << endl;
+    cout << "- White pixels detected: " << whitePixels << endl;
+    cout << "- Wood pixels detected: " << woodPixels << endl;
+    cout << "- Total LAB pixels: " << totalPixels << endl;
+
+    return finalMask;
+}
+
 // 形态学处理函数
 Mat performMorphological(const Mat &binaryImage)
 {

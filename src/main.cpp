@@ -57,22 +57,12 @@ int main(int argc, char *argv[])
     // Resize image to specified scale for processing using image processing module
     Mat rgbImage = resizeImageByScale(originalImage, Config::RESIZE_SCALE);
 
-    // Create HSV image storage variable
-    Mat hsvImage;
-
-    // Convert BGR to HSV (OpenCV reads images in BGR format by default)
-    cvtColor(rgbImage, hsvImage, COLOR_BGR2HSV);
-
-    // Split HSV channels for analysis
-    vector<Mat> hsvChannels;
-    split(hsvImage, hsvChannels);
-
     // =====================================================
     // 图像处理流水线
     // =====================================================
 
-    // 1. 创建原始HSV的二值化结果
-    Mat originalBinary = createHueBinaryMask(hsvImage);
+    // 1. 创建LAB二值化结果
+    Mat originalBinary = createLABBinaryMask(rgbImage);
 
     // 2. 形态学处理
     Mat morphProcessed = performMorphological(originalBinary);
@@ -97,26 +87,24 @@ int main(int argc, char *argv[])
     // 结果显示
     // =====================================================
 
-    // 显示6张图片：原图，缩放图，HSV图，二值图，形态学处理，连通域过滤
+    // 显示5张图片：原图，缩放图，二值图，形态学处理，连通域过滤
     vector<Mat> displayImages = {
         originalImage,  // 1. 原始BGR图像（未缩放）
         rgbImage,       // 2. 缩放后的BGR图像
-        hsvImage,       // 3. HSV图像
-        originalBinary, // 4. 二值化图像
-        morphProcessed, // 5. 形态学处理结果
-        finalResult     // 6. 连通域百分比过滤结果
+        originalBinary, // 3. LAB二值化图像
+        morphProcessed, // 4. 形态学处理结果
+        finalResult     // 5. 连通域百分比过滤结果
     };
 
     vector<string> displayTitles = {
         "1. Original Image",
         "2. Resized Image",
-        "3. HSV Image",
-        "4. Binary Mask",
-        "5. Morphological",
-        "6. Final Result"};
+        "3. LAB Binary Mask",
+        "4. Morphological",
+        "5. Final Result"};
 
-    // 创建subplot显示 (3行3列布局，第8、9个位置留空)
-    Mat subplotCanvas = createSubplotDisplay(displayImages, displayTitles, 3, 3);
+    // 创建subplot显示 (2行3列布局，显示5张处理步骤图)
+    Mat subplotCanvas = createSubplotDisplay(displayImages, displayTitles, 2, 3);
 
     // 在画布上显示两个关键处理时间
     putText(subplotCanvas, "Total Time: " + to_string(totalMs) + "ms", Point(10, 30),
@@ -125,31 +113,25 @@ int main(int argc, char *argv[])
             FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 200, 200), 2);
 
     // 显示主要结果窗口
-    namedWindow("HSV and Morphological Processing", WINDOW_AUTOSIZE);
-    imshow("HSV and Morphological Processing", subplotCanvas);
+    namedWindow("LAB Detection and Processing", WINDOW_AUTOSIZE);
+    imshow("LAB Detection and Processing", subplotCanvas);
 
     // Wait for user to view the subplot
     waitKey(0);
 
     // Close the subplot window
-    destroyWindow("HSV and Morphological Processing");
-
-    // =====================================================
-    // 交互式颜色分析
-    // =====================================================
-
-    showColorAnalysis(hsvImage, rgbImage);
+    destroyWindow("LAB Detection and Processing");
 
     // =====================================================
     // 保存结果
     // =====================================================
 
     // Save the result images
-    string resultOutputPath = "morphological_processing_" + imagePath;
+    string resultOutputPath = "lab_detection_processing_" + imagePath;
     bool resultSaveSuccess = imwrite(resultOutputPath, subplotCanvas);
 
     // Save individual processing results
-    string binaryOutputPath = "binary_mask_" + imagePath;
+    string binaryOutputPath = "lab_binary_mask_" + imagePath;
     bool binarySaveSuccess = imwrite(binaryOutputPath, originalBinary);
 
     string morphOutputPath = "morphological_" + imagePath;
