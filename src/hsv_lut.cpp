@@ -10,7 +10,7 @@ using namespace cv;
 using namespace std;
 using namespace std::chrono;
 
-// 静态成员变量定义
+// Static member variable definitions
 bool HSVLookupTable::initialized = false;
 unsigned char HSVLookupTable::lutData[256][256][256];
 const string HSVLookupTable::LUT_FILE_PATH = "hsv_lut_cache.bin";
@@ -18,8 +18,7 @@ const string HSVLookupTable::LUT_MAGIC_HEADER = "HSVLUT01";
 const uint32_t HSVLookupTable::LUT_VERSION = 1;
 
 /**
- * 初始化LUT系统
- * 尝试从文件加载，如果失败则重新构建
+ * Initialize LUT system
  */
 bool HSVLookupTable::initialize()
 {
@@ -29,10 +28,10 @@ bool HSVLookupTable::initialize()
     }
 
     cout << "========================================" << endl;
-    cout << "  HSV查找表 (LUT) 初始化" << endl;
+    cout << "  HSV查找表(LUT)初始化" << endl;
     cout << "========================================" << endl;
 
-    // 尝试从文件加载
+    // Try to load from file
     if (loadLUTFromFile())
     {
         cout << "✓ 成功从文件加载LUT缓存" << endl;
@@ -40,11 +39,11 @@ bool HSVLookupTable::initialize()
         return true;
     }
 
-    // 文件加载失败，重新构建
-    cout << "! LUT文件不存在或已损坏，开始重新构建..." << endl;
+    // File loading failed, rebuild
+    cout << "LUT文件不存在或已损坏，开始重新构建..." << endl;
     buildLUT();
 
-    // 保存到文件
+    // Save to file
     if (saveLUTToFile())
     {
         cout << "✓ LUT已保存到文件: " << LUT_FILE_PATH << endl;
@@ -55,21 +54,20 @@ bool HSVLookupTable::initialize()
     }
 
     initialized = true;
-    cout << "✓ HSV LUT初始化完成！" << endl;
+    cout << "✓ HSV LUT初始化完成!" << endl;
     cout << "========================================" << endl;
     return true;
 }
 
 /**
- * 构建HSV查找表
- * 遍历所有可能的BGR组合，预计算HSV判断结果
+ * Build HSV lookup table
  */
 void HSVLookupTable::buildLUT()
 {
     cout << "正在构建HSV查找表..." << endl;
     auto startTime = steady_clock::now();
 
-    // 遍历所有可能的BGR值
+    // Traverse all possible BGR values
     for (int b = 0; b < 256; b++)
     {
         showProgress(b, 256, "构建LUT");
@@ -78,7 +76,7 @@ void HSVLookupTable::buildLUT()
         {
             for (int r = 0; r < 256; r++)
             {
-                // 将BGR转换为HSV
+                // Convert BGR to HSV
                 Mat bgrPixel = (Mat_<Vec3b>(1, 1) << Vec3b(b, g, r));
                 Mat hsvPixel;
                 cvtColor(bgrPixel, hsvPixel, COLOR_BGR2HSV);
@@ -86,7 +84,7 @@ void HSVLookupTable::buildLUT()
                 Vec3b hsv = hsvPixel.at<Vec3b>(0, 0);
                 int h = hsv[0], s = hsv[1], v = hsv[2];
 
-                // 检查是否在目标HSV范围内
+                // Check if in target HSV range
                 bool inTargetRange = false;
                 for (int i = 0; i < Config::RANGE_COUNT; ++i)
                 {
@@ -99,7 +97,7 @@ void HSVLookupTable::buildLUT()
                     }
                 }
 
-                // 存储结果到LUT
+                // Store result to LUT
                 lutData[b][g][r] = inTargetRange ? 255 : 0;
             }
         }
@@ -108,11 +106,12 @@ void HSVLookupTable::buildLUT()
     auto endTime = steady_clock::now();
     auto duration = duration_cast<milliseconds>(endTime - startTime);
 
-    cout << "\n✓ LUT构建完成！耗时: " << duration.count() << "ms" << endl;
+    cout << endl
+         << "✓ LUT构建完成! 耗时: " << duration.count() << "ms" << endl;
 }
 
 /**
- * 从文件加载LUT
+ * Load LUT from file
  */
 bool HSVLookupTable::loadLUTFromFile()
 {
@@ -127,7 +126,7 @@ bool HSVLookupTable::loadLUTFromFile()
         return false;
     }
 
-    // 读取文件头
+    // Read file header
     LUTFileHeader header;
     file.read(reinterpret_cast<char *>(&header), sizeof(header));
 
@@ -137,7 +136,7 @@ bool HSVLookupTable::loadLUTFromFile()
         return false;
     }
 
-    // 验证文件头
+    // Validate file header
     if (string(header.magic, 8) != LUT_MAGIC_HEADER ||
         header.version != LUT_VERSION)
     {
@@ -145,15 +144,15 @@ bool HSVLookupTable::loadLUTFromFile()
         return false;
     }
 
-    // 检查HSV参数是否改变
+    // Check if HSV parameters changed
     if (header.hsvParamsHash != calculateHSVParamsHash())
     {
-        cout << "! HSV参数已更改，需要重新构建LUT" << endl;
+        cout << "HSV参数已更改，需要重新构建LUT" << endl;
         file.close();
         return false;
     }
 
-    // 读取LUT数据
+    // Read LUT data
     file.read(reinterpret_cast<char *>(lutData), sizeof(lutData));
     if (file.gcount() != sizeof(lutData))
     {
@@ -161,11 +160,11 @@ bool HSVLookupTable::loadLUTFromFile()
         return false;
     }
 
-    // 验证校验和
+    // Validate checksum
     uint32_t calculatedChecksum = calculateChecksum(reinterpret_cast<const unsigned char *>(lutData), sizeof(lutData));
     if (calculatedChecksum != header.checksum)
     {
-        cout << "! LUT文件校验和错误，数据可能已损坏" << endl;
+        cout << "LUT文件校验和错误，数据可能已损坏" << endl;
         file.close();
         return false;
     }
@@ -175,7 +174,7 @@ bool HSVLookupTable::loadLUTFromFile()
 }
 
 /**
- * 保存LUT到文件
+ * Save LUT to file
  */
 bool HSVLookupTable::saveLUTToFile()
 {
@@ -185,7 +184,7 @@ bool HSVLookupTable::saveLUTToFile()
         return false;
     }
 
-    // 准备文件头
+    // Prepare file header
     LUTFileHeader header;
     strncpy(header.magic, LUT_MAGIC_HEADER.c_str(), 8);
     header.version = LUT_VERSION;
@@ -193,7 +192,7 @@ bool HSVLookupTable::saveLUTToFile()
     header.timestamp = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
     header.hsvParamsHash = calculateHSVParamsHash();
 
-    // 写入文件头和数据
+    // Write header and data
     file.write(reinterpret_cast<const char *>(&header), sizeof(header));
     file.write(reinterpret_cast<const char *>(lutData), sizeof(lutData));
 
@@ -202,7 +201,7 @@ bool HSVLookupTable::saveLUTToFile()
 }
 
 /**
- * 使用LUT处理图像
+ * Process image using LUT
  */
 Mat HSVLookupTable::processImage(const Mat &bgrImage)
 {
@@ -220,7 +219,7 @@ Mat HSVLookupTable::processImage(const Mat &bgrImage)
 
     Mat result = Mat::zeros(bgrImage.size(), CV_8UC1);
 
-    // 使用LUT快速处理每个像素
+    // Use LUT to quickly process each pixel
     for (int y = 0; y < bgrImage.rows; y++)
     {
         const Vec3b *bgrRow = bgrImage.ptr<Vec3b>(y);
@@ -229,7 +228,7 @@ Mat HSVLookupTable::processImage(const Mat &bgrImage)
         for (int x = 0; x < bgrImage.cols; x++)
         {
             Vec3b bgr = bgrRow[x];
-            // 直接查表，无需计算！
+            // Direct table lookup, no calculation needed!
             resultRow[x] = lutData[bgr[0]][bgr[1]][bgr[2]];
         }
     }
@@ -238,7 +237,7 @@ Mat HSVLookupTable::processImage(const Mat &bgrImage)
 }
 
 /**
- * 计算HSV参数的哈希值（用于检测参数变化）
+ * Calculate hash value of HSV parameters
  */
 uint32_t HSVLookupTable::calculateHSVParamsHash()
 {
@@ -254,7 +253,7 @@ uint32_t HSVLookupTable::calculateHSVParamsHash()
 }
 
 /**
- * 计算数据校验和
+ * Calculate data checksum
  */
 uint32_t HSVLookupTable::calculateChecksum(const unsigned char *data, size_t size)
 {
@@ -267,7 +266,7 @@ uint32_t HSVLookupTable::calculateChecksum(const unsigned char *data, size_t siz
 }
 
 /**
- * 显示进度
+ * Show progress
  */
 void HSVLookupTable::showProgress(int current, int total, const string &operation)
 {
@@ -279,7 +278,7 @@ void HSVLookupTable::showProgress(int current, int total, const string &operatio
 }
 
 /**
- * 获取状态信息
+ * Get status information
  */
 string HSVLookupTable::getStatusInfo()
 {
@@ -303,7 +302,7 @@ string HSVLookupTable::getStatusInfo()
 }
 
 /**
- * 获取内存使用量（MB）
+ * Get memory usage (MB)
  */
 double HSVLookupTable::getMemoryUsageMB()
 {
@@ -311,7 +310,7 @@ double HSVLookupTable::getMemoryUsageMB()
 }
 
 /**
- * 打印内存统计信息
+ * Print memory statistics
  */
 void HSVLookupTable::printMemoryStats()
 {
@@ -323,7 +322,7 @@ void HSVLookupTable::printMemoryStats()
 }
 
 /**
- * 清理资源
+ * Cleanup resources
  */
 void HSVLookupTable::cleanup()
 {
@@ -332,7 +331,7 @@ void HSVLookupTable::cleanup()
 }
 
 /**
- * 检查LUT是否就绪
+ * Check if LUT is ready
  */
 bool HSVLookupTable::isReady()
 {
@@ -340,7 +339,7 @@ bool HSVLookupTable::isReady()
 }
 
 /**
- * 强制重建LUT
+ * Force rebuild LUT
  */
 void HSVLookupTable::forceBuildLUT()
 {
@@ -351,7 +350,7 @@ void HSVLookupTable::forceBuildLUT()
 }
 
 /**
- * 清除LUT文件
+ * Clear LUT file
  */
 bool HSVLookupTable::clearLUTFile()
 {
@@ -363,7 +362,7 @@ bool HSVLookupTable::clearLUTFile()
 }
 
 /**
- * 打印LUT统计信息
+ * Print LUT statistics
  */
 void HSVLookupTable::printLUTStats()
 {
@@ -373,7 +372,7 @@ void HSVLookupTable::printLUTStats()
         return;
     }
 
-    // 统计LUT中目标像素的数量
+    // Count target pixels in LUT
     int targetPixels = 0;
     int totalPixels = 256 * 256 * 256;
 
