@@ -128,7 +128,9 @@ dkms.conf
 *.old
 
 # 图像输出文件（程序生成的结果）
-hsv_*
+hsv_*.jpg
+hsv_*.png
+hsv_*.bmp
 h_channel_*
 s_channel_*
 v_channel_*

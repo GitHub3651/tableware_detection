@@ -19,6 +19,7 @@ include_directories(include)
 add_executable(tableware_detection 
     src/main.cpp
     src/image_processing.cpp
+    src/hsv_lut.cpp
     src/display.cpp
 )
 

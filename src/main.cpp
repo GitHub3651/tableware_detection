@@ -13,6 +13,7 @@
  */
 
 #include "image_processing.h"
+#include "hsv_lut.h"
 #include "display.h"
 #include "config_constants.h"
 #include <iostream>
@@ -22,6 +23,42 @@
 
 using namespace cv;
 using namespace std;
+
+// 用户选择界面
+int displayMethodSelection()
+{
+    cout << "\n========================================" << endl;
+    cout << "         餐具检测 - 处理方法选择" << endl;
+    cout << "========================================" << endl;
+    cout << "1. 传统HSV检测" << endl;
+    cout << "   • 适合：单张图片处理" << endl;
+    cout << "   • 特点：稳定，无需初始化" << endl;
+    cout << "   • 速度：中等" << endl;
+    cout << "----------------------------------------" << endl;
+    cout << "2. LUT加速检测" << endl;
+    cout << "   • 适合：批量图片处理" << endl;
+    cout << "   • 特点：首次慢，后续极快" << endl;
+    cout << "   • 内存：占用16MB" << endl;
+    cout << "========================================" << endl;
+
+    int choice;
+    while (true)
+    {
+        cout << "请选择处理方法 (1/2): ";
+        cin >> choice;
+
+        if (choice == 1 || choice == 2)
+        {
+            break;
+        }
+        else
+        {
+            cout << "! 请输入 1 或 2" << endl;
+        }
+    }
+
+    return choice;
+}
 
 int main(int argc, char *argv[])
 {
@@ -35,6 +72,20 @@ int main(int argc, char *argv[])
     }
 
     string imagePath = argv[1];
+
+    // 显示方法选择界面
+    int processingMethod = displayMethodSelection();
+
+    // 如果选择LUT方法，进行初始化
+    bool useLUT = (processingMethod == 2);
+    if (useLUT)
+    {
+        if (!HSVLookupTable::initialize())
+        {
+            cerr << "! LUT初始化失败，切换到传统方法" << endl;
+            useLUT = false;
+        }
+    }
 
     // 开始总计时
     auto totalStart = chrono::steady_clock::now();
@@ -61,8 +112,20 @@ int main(int argc, char *argv[])
     // 图像处理流水线
     // =====================================================
 
-    // 1. 创建HSV二值化结果
-    Mat originalBinary = createHueBinaryMask(rgbImage);
+    // 1. 创建HSV二值化结果（根据选择使用不同方法）
+    Mat originalBinary;
+    string methodName;
+
+    if (useLUT)
+    {
+        originalBinary = HSVLookupTable::processImage(rgbImage);
+        methodName = "LUT加速";
+    }
+    else
+    {
+        originalBinary = createHueBinaryMask(rgbImage);
+        methodName = "传统HSV";
+    }
 
     // 2. 形态学处理
     Mat morphProcessed = performMorphological(originalBinary);
@@ -81,9 +144,17 @@ int main(int argc, char *argv[])
     int algorithmMs = chrono::duration_cast<chrono::milliseconds>(algorithmEnd - algorithmStart).count();
     int totalMs = chrono::duration_cast<chrono::milliseconds>(totalEnd - totalStart).count();
 
-    // 在控制台输出处理时间
-    cout << "Algorithm time: " << algorithmMs << "ms" << endl;
-    cout << "Total time: " << totalMs << "ms" << endl; // =====================================================
+    // 在控制台输出处理时间和方法信息
+    cout << "\n========== 处理完成 ==========" << endl;
+    cout << "处理方法: " << methodName << endl;
+    cout << "算法耗时: " << algorithmMs << "ms" << endl;
+    cout << "总耗时: " << totalMs << "ms" << endl;
+
+    if (useLUT)
+    {
+        cout << "LUT状态: " << HSVLookupTable::getStatusInfo() << endl;
+    }
+    cout << "============================" << endl; // =====================================================
     // 结果显示
     // =====================================================
 
@@ -99,17 +170,19 @@ int main(int argc, char *argv[])
     vector<string> displayTitles = {
         "1. Original Image",
         "2. Resized Image",
-        "3. HSV Binary Mask",
+        "3. " + methodName + " Binary Mask",
         "4. Morphological",
         "5. Final Result"};
 
     // 创建subplot显示 (2行3列布局，显示5张处理步骤图)
     Mat subplotCanvas = createSubplotDisplay(displayImages, displayTitles, 2, 3);
 
-    // 在画布上显示两个关键处理时间
-    putText(subplotCanvas, "Total Time: " + to_string(totalMs) + "ms", Point(10, 30),
+    // 在画布上显示处理信息
+    putText(subplotCanvas, "Method: " + methodName, Point(10, 30),
+            FONT_HERSHEY_SIMPLEX, 0.7, Scalar(255, 255, 0), 2);
+    putText(subplotCanvas, "Total: " + to_string(totalMs) + "ms", Point(10, 60),
             FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 255, 0), 2);
-    putText(subplotCanvas, "Algorithm Only: " + to_string(algorithmMs) + "ms", Point(10, 60),
+    putText(subplotCanvas, "Algorithm: " + to_string(algorithmMs) + "ms", Point(10, 90),
             FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 200, 200), 2);
 
     // 显示主要结果窗口
@@ -122,6 +195,11 @@ int main(int argc, char *argv[])
     // 使用更安全的窗口关闭方法
     destroyAllWindows();
 
-    system("pause");
+    // 清理LUT资源（如果使用了）
+    if (useLUT)
+    {
+        HSVLookupTable::cleanup();
+    }
+
     return 0;
 }
