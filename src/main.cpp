@@ -119,40 +119,8 @@ int main(int argc, char *argv[])
     // Wait for user to view the subplot
     waitKey(0);
 
-    // Close the subplot window
-    destroyWindow("HSV Detection and Processing");
-
-    // =====================================================
-    // 保存结果
-    // =====================================================
-
-    // Save the result images
-    string resultOutputPath = "hsv_detection_processing_" + imagePath;
-    bool resultSaveSuccess = imwrite(resultOutputPath, subplotCanvas);
-
-    // Save individual processing results
-    string binaryOutputPath = "hsv_binary_mask_" + imagePath;
-    bool binarySaveSuccess = imwrite(binaryOutputPath, originalBinary);
-
-    string morphOutputPath = "morphological_" + imagePath;
-    bool morphSaveSuccess = imwrite(morphOutputPath, morphProcessed);
-
-    string finalOutputPath = "final_result_" + imagePath;
-    bool finalSaveSuccess = imwrite(finalOutputPath, finalResult);
-
-    // 输出保存结果
-    if (resultSaveSuccess && binarySaveSuccess && morphSaveSuccess && finalSaveSuccess)
-    {
-        cout << "\nAll result images saved successfully!" << endl;
-        cout << "- Main result: " << resultOutputPath << endl;
-        cout << "- Binary mask: " << binaryOutputPath << endl;
-        cout << "- Morphological result: " << morphOutputPath << endl;
-        cout << "- Final result: " << finalOutputPath << endl;
-    }
-    else
-    {
-        cout << "\nWarning: Some images may not be saved successfully." << endl;
-    }
+    // 使用更安全的窗口关闭方法
+    destroyAllWindows();
 
     system("pause");
     return 0;
