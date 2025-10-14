@@ -10,8 +10,8 @@ using namespace std;
 // 图像缩放函数
 Mat resizeImageByScale(const Mat &originalImage, double scale = 0.1);
 
-// 多HSV二值分割函数
-Mat createHueBinaryMask(const Mat &hsvImage);
+// 多HSV二值分割函数 (直接接受BGR图像)
+Mat createHueBinaryMask(const Mat &bgrImage);
 
 // LAB色彩空间二值分割函数
 Mat createLABBinaryMask(const Mat &bgrImage);

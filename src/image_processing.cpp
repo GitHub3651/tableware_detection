@@ -36,9 +36,19 @@ Mat resizeImageByScale(const Mat &originalImage, double scale)
     return resizedImage;
 }
 
-// 方案A：预编译优化的多HSV二值分割函数
-Mat createHueBinaryMask(const Mat &hsvImage)
+// 方案A：预编译优化的多HSV二值分割函数 (直接接受BGR图像)
+Mat createHueBinaryMask(const Mat &bgrImage)
 {
+    if (bgrImage.empty())
+    {
+        cerr << "Error: Empty input image for HSV conversion" << endl;
+        return Mat();
+    }
+
+    // 转换BGR到HSV
+    Mat hsvImage;
+    cvtColor(bgrImage, hsvImage, COLOR_BGR2HSV);
+
     Mat result = Mat::zeros(hsvImage.size(), CV_8UC1);
 
     // 编译器会完全展开这个循环，实现最佳性能

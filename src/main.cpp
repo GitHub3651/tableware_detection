@@ -61,8 +61,8 @@ int main(int argc, char *argv[])
     // 图像处理流水线
     // =====================================================
 
-    // 1. 创建LAB二值化结果
-    Mat originalBinary = createLABBinaryMask(rgbImage);
+    // 1. 创建HSV二值化结果
+    Mat originalBinary = createHueBinaryMask(rgbImage);
 
     // 2. 形态学处理
     Mat morphProcessed = performMorphological(originalBinary);
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
     vector<Mat> displayImages = {
         originalImage,  // 1. 原始BGR图像（未缩放）
         rgbImage,       // 2. 缩放后的BGR图像
-        originalBinary, // 3. LAB二值化图像
+        originalBinary, // 3. HSV二值化图像
         morphProcessed, // 4. 形态学处理结果
         finalResult     // 5. 连通域百分比过滤结果
     };
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     vector<string> displayTitles = {
         "1. Original Image",
         "2. Resized Image",
-        "3. LAB Binary Mask",
+        "3. HSV Binary Mask",
         "4. Morphological",
         "5. Final Result"};
 
@@ -113,25 +113,25 @@ int main(int argc, char *argv[])
             FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 200, 200), 2);
 
     // 显示主要结果窗口
-    namedWindow("LAB Detection and Processing", WINDOW_AUTOSIZE);
-    imshow("LAB Detection and Processing", subplotCanvas);
+    namedWindow("HSV Detection and Processing", WINDOW_AUTOSIZE);
+    imshow("HSV Detection and Processing", subplotCanvas);
 
     // Wait for user to view the subplot
     waitKey(0);
 
     // Close the subplot window
-    destroyWindow("LAB Detection and Processing");
+    destroyWindow("HSV Detection and Processing");
 
     // =====================================================
     // 保存结果
     // =====================================================
 
     // Save the result images
-    string resultOutputPath = "lab_detection_processing_" + imagePath;
+    string resultOutputPath = "hsv_detection_processing_" + imagePath;
     bool resultSaveSuccess = imwrite(resultOutputPath, subplotCanvas);
 
     // Save individual processing results
-    string binaryOutputPath = "lab_binary_mask_" + imagePath;
+    string binaryOutputPath = "hsv_binary_mask_" + imagePath;
     bool binarySaveSuccess = imwrite(binaryOutputPath, originalBinary);
 
     string morphOutputPath = "morphological_" + imagePath;
