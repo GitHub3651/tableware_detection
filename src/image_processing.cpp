@@ -36,6 +36,37 @@ Mat resizeImageByScale(const Mat &originalImage, double scale)
     return resizedImage;
 }
 
+// 模糊处理函数 - 减少纹理干扰和噪声
+Mat applyBlurProcessing(const Mat &inputImage)
+{
+    if (inputImage.empty())
+    {
+        cerr << "Error: Empty input image for blur processing" << endl;
+        return Mat();
+    }
+
+    // 如果禁用模糊处理，直接返回原图
+    if (!Config::ENABLE_BLUR)
+    {
+        cout << "Blur processing disabled" << endl;
+        return inputImage.clone();
+    }
+
+    Mat blurredImage;
+
+    // 使用配置参数进行高斯模糊
+    Size kernelSize(Config::BLUR_KERNEL_SIZE, Config::BLUR_KERNEL_SIZE);
+    GaussianBlur(inputImage, blurredImage, kernelSize, Config::BLUR_SIGMA);
+
+    // 可选：添加中值滤波进一步去除椒盐噪声
+    // medianBlur(blurredImage, blurredImage, 3);
+
+    cout << "Applied Gaussian blur processing (kernel: " << Config::BLUR_KERNEL_SIZE
+         << "x" << Config::BLUR_KERNEL_SIZE << ", sigma: " << Config::BLUR_SIGMA << ")" << endl;
+
+    return blurredImage;
+}
+
 // 方案A：预编译优化的多HSV二值分割函数 (直接接受BGR图像)
 Mat createHueBinaryMask(const Mat &bgrImage)
 {
@@ -241,5 +272,46 @@ Mat filterConnectedComponentsByPercent(const Mat &binaryImage, double minPercent
         }
     }
 
+    return result;
+}
+
+// CLAHE对比度限制自适应直方图均衡
+Mat enhanceContrast_CLAHE(const Mat &inputImage)
+{
+    if (inputImage.empty())
+    {
+        cerr << "Error: Empty input image for CLAHE" << endl;
+        return Mat();
+    }
+
+    Mat result;
+
+    if (inputImage.channels() == 3)
+    {
+        // 对彩色图像，在LAB空间处理
+        Mat lab;
+        cvtColor(inputImage, lab, COLOR_BGR2Lab);
+        vector<Mat> channels;
+        split(lab, channels);
+
+        // 创建CLAHE对象，参数固定用于测试
+        Ptr<CLAHE> clahe = createCLAHE();
+        clahe->setClipLimit(3.0);            // 对比度限制
+        clahe->setTilesGridSize(Size(8, 8)); // 网格大小8x8
+
+        clahe->apply(channels[0], channels[0]); // 只处理L通道
+        merge(channels, lab);
+        cvtColor(lab, result, COLOR_Lab2BGR);
+    }
+    else
+    {
+        // 灰度图像直接处理
+        Ptr<CLAHE> clahe = createCLAHE();
+        clahe->setClipLimit(3.0);
+        clahe->setTilesGridSize(Size(8, 8));
+        clahe->apply(inputImage, result);
+    }
+
+    cout << "Applied CLAHE enhancement (clip: 3.0, tiles: 8x8)" << endl;
     return result;
 }

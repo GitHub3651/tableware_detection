@@ -61,16 +61,22 @@ int main(int argc, char *argv[])
     // 图像处理流水线
     // =====================================================
 
-    // 1. 创建HSV二值化结果
-    Mat originalBinary = createHueBinaryMask(rgbImage);
+    // 1. 模糊处理 - 减少纹理干扰
+    Mat blurredImage = applyBlurProcessing(rgbImage);
 
-    // 2. 形态学处理
+    // 2. CLAHE对比度增强 - 增强黑色区域细节
+    Mat enhancedImage = enhanceContrast_CLAHE(blurredImage);
+
+    // 3. 创建HSV二值化结果
+    Mat originalBinary = createHueBinaryMask(enhancedImage);
+
+    // 4. 形态学处理
     Mat morphProcessed = performMorphological(originalBinary);
 
-    // 3. 轮廓填充处理
+    // 5. 轮廓填充处理
     Mat contourFilled = fillContours(morphProcessed);
 
-    // 4. 连通域百分比过滤处理（基于全图面积百分比过滤）
+    // 6. 连通域百分比过滤处理（基于全图面积百分比过滤）
     Mat finalResult = filterConnectedComponentsByPercent(contourFilled, Config::CONNECTED_COMPONENT_PERCENT);
 
     // 算法处理完成，记录结束时间
@@ -87,24 +93,28 @@ int main(int argc, char *argv[])
     // 结果显示
     // =====================================================
 
-    // 显示5张图片：原图，缩放图，二值图，形态学处理，连通域过滤
+    // 显示7张图片：原图，缩放图，模糊图，CLAHE增强图，二值图，形态学处理，连通域过滤
     vector<Mat> displayImages = {
         originalImage,  // 1. 原始BGR图像（未缩放）
         rgbImage,       // 2. 缩放后的BGR图像
-        originalBinary, // 3. HSV二值化图像
-        morphProcessed, // 4. 形态学处理结果
-        finalResult     // 5. 连通域百分比过滤结果
+        blurredImage,   // 3. 模糊处理后的图像
+        enhancedImage,  // 4. CLAHE对比度增强后的图像
+        originalBinary, // 5. HSV二值化图像
+        morphProcessed, // 6. 形态学处理结果
+        finalResult     // 7. 连通域百分比过滤结果
     };
 
     vector<string> displayTitles = {
         "1. Original Image",
         "2. Resized Image",
-        "3. HSV Binary Mask",
-        "4. Morphological",
-        "5. Final Result"};
+        "3. Blurred Image",
+        "4. CLAHE Enhanced",
+        "5. HSV Binary Mask",
+        "6. Morphological",
+        "7. Final Result"};
 
-    // 创建subplot显示 (2行3列布局，显示5张处理步骤图)
-    Mat subplotCanvas = createSubplotDisplay(displayImages, displayTitles, 2, 3);
+    // 创建subplot显示 (3行3列布局，显示7张处理步骤图)
+    Mat subplotCanvas = createSubplotDisplay(displayImages, displayTitles, 3, 3);
 
     // 在画布上显示两个关键处理时间
     putText(subplotCanvas, "Total Time: " + to_string(totalMs) + "ms", Point(10, 30),
@@ -119,8 +129,19 @@ int main(int argc, char *argv[])
     // Wait for user to view the subplot
     waitKey(0);
 
-    // 使用更安全的窗口关闭方法
-    destroyAllWindows();
+    // Close the subplot window
+    destroyWindow("HSV Detection and Processing");
+
+    // =====================================================
+    // 交互式颜色分析
+    // =====================================================
+
+    // 转换为HSV用于颜色分析
+    Mat hsvImage;
+    cvtColor(enhancedImage, hsvImage, COLOR_BGR2HSV);
+
+    // 显示交互式颜色分析窗口
+    showColorAnalysis(hsvImage, enhancedImage);
 
     return 0;
 }
