@@ -19,6 +19,8 @@
 #include <string>
 #include <cstdlib>
 #include <chrono>
+#include <sstream>
+#include <iomanip>
 
 using namespace cv;
 using namespace std;
@@ -132,11 +134,35 @@ int main(int argc, char *argv[])
     // 创建subplot显示 (2行3列布局，显示6张处理步骤图)
     Mat subplotCanvas = createSubplotDisplay(displayImages, displayTitles, 2, 3);
 
-    // 在画布左上角显示处理时间
-    putText(subplotCanvas, "Algorithm: " + to_string(algorithmMs) + "ms", Point(10, 30),
+    // 扩大画布，在底部增加文字显示区域
+    int textAreaHeight = 150; // 底部文字区域高度
+    Mat extendedCanvas(subplotCanvas.rows + textAreaHeight, subplotCanvas.cols, CV_8UC3, Scalar(40, 40, 40));
+    subplotCanvas.copyTo(extendedCanvas(Rect(0, 0, subplotCanvas.cols, subplotCanvas.rows)));
+
+    // 在扩展画布左上角显示处理时间
+    putText(extendedCanvas, "Algorithm: " + to_string(algorithmMs) + "ms", Point(10, 30),
             FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 255, 0), 2);
-    putText(subplotCanvas, "Total: " + to_string(totalMs) + "ms", Point(10, 60),
+    putText(extendedCanvas, "Total: " + to_string(totalMs) + "ms", Point(10, 60),
             FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 255, 0), 2);
+
+    // 在扩展画布底部专门区域显示模板匹配结果
+    int textStartY = subplotCanvas.rows + 30; // 文字起始Y坐标
+    for (size_t i = 0; i < matchResults.size(); ++i)
+    {
+        // 格式化显示：最佳相似度=X.XXX (角度=X.X°)
+        stringstream ss;
+        ss << fixed << setprecision(3) << matchResults[i].score;
+        string scoreStr = ss.str();
+        ss.str("");
+        ss << fixed << setprecision(1) << matchResults[i].bestAngle;
+        string angleStr = ss.str();
+
+        string statusText = "no." + to_string(i + 1) + ":" + (matchResults[i].passed ? "ok" : "ng") +
+                            " similarity=" + scoreStr + " (angle=" + angleStr + "deg)";
+        Scalar statusColor = matchResults[i].passed ? Scalar(255, 0, 0) : Scalar(0, 0, 255); // 蓝色=OK, 红色=NG
+        putText(extendedCanvas, statusText, Point(10, textStartY + int(i * 35)),
+                FONT_HERSHEY_COMPLEX, 0.7, statusColor, 2);
+    }
 
     // 在画布右上角显示 OK/NG 判定结果
     string judgementText = isOK ? "OK" : "NG";
@@ -150,16 +176,14 @@ int main(int argc, char *argv[])
     Size textSize = getTextSize(judgementText, fontFace, fontScale, thickness, &baseline);
 
     // 右上角位置（留出边距）
-    Point textPos(subplotCanvas.cols - textSize.width - 30, textSize.height + 30);
+    Point textPos(extendedCanvas.cols - textSize.width - 30, textSize.height + 30);
 
     // 绘制文本
-    putText(subplotCanvas, judgementText, textPos, fontFace, fontScale, judgementColor, thickness);
+    putText(extendedCanvas, judgementText, textPos, fontFace, fontScale, judgementColor, thickness);
 
     // 显示主要结果窗口
     namedWindow("HSV Detection and Processing", WINDOW_AUTOSIZE);
-    imshow("HSV Detection and Processing", subplotCanvas);
-
-    // 等待用户按键
+    imshow("HSV Detection and Processing", extendedCanvas); // 等待用户按键
     int key = waitKey(0);
 
     // Close all windows

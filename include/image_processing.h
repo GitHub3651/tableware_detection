@@ -39,9 +39,10 @@ Mat enhanceContrast_CLAHE(const Mat &inputImage);
 // 单个模板匹配结果
 struct TemplateMatchResult
 {
-    string filename; // 模板文件名
-    double score;    // 匹配得分
-    bool passed;     // 是否通过
+    string filename;  // 模板文件名
+    double score;     // 匹配得分
+    double bestAngle; // 最佳匹配角度
+    bool passed;      // 是否通过
 };
 
 /**

@@ -7,12 +7,12 @@ namespace Config
     constexpr int MORPH_DILATE_KERNEL_SIZE = 4; // 膨胀核大小 (连接断裂区域)
 
     // 轮廓和连通域过滤参数
-    constexpr double MIN_CONTOUR_AREA = 200.0;          // 最小轮廓面积阈值
-    constexpr double MIN_CONNECTED_AREA = 200.0;        // 最小连通域面积阈值
+    constexpr double MIN_CONTOUR_AREA = 50;             // 最小轮廓面积阈值
+    constexpr double MIN_CONNECTED_AREA = 50;           // 最小连通域面积阈值
     constexpr double CONNECTED_COMPONENT_PERCENT = 2.0; // 连通域面积百分比阈值（小于2%全图面积的小连体域将会被过滤）
 
     // 图像缩放参数
-    constexpr double RESIZE_SCALE = 0.1; // 图像缩放比例 (缩放到原尺寸的10%)
+    constexpr double RESIZE_SCALE = 0.05; // 图像缩放比例 (缩放到原尺寸的10%)
 
     // 模糊处理参数
     constexpr int BLUR_KERNEL_SIZE = 3; // 高斯模糊核大小

@@ -540,6 +540,7 @@ bool judgeByTemplateMatch(
 
         // 判断是否通过
         result.score = bestSimilarity;
+        result.bestAngle = bestAngle;
         result.passed = (bestSimilarity >= thresholds[i]);
 
         if (!result.passed)
@@ -555,6 +556,9 @@ bool judgeByTemplateMatch(
              << " (角度=" << bestAngle << "°, 测试角度数=" << testedAngles
              << ", 阈值=" << thresholds[i] << ") "
              << (result.passed ? "[通过]" : "[失败]") << endl;
+
+        // 添加空行分隔不同模板的输出
+        cout << endl;
     }
 
     return allPassed;
