@@ -52,16 +52,16 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    // =====================================================
+    // 算法开始计时（从读取图片之后开始）
+    // =====================================================
+    auto algorithmStart = chrono::steady_clock::now();
+
     // 先缩放原图
     Mat resizedImage = resizeImageByScale(originalImage, Config::RESIZE_SCALE);
 
     // 直接使用缩放后的图像进行处理
     Mat rgbImage = resizedImage.clone();
-
-    // =====================================================
-    // 算法开始计时（ROI选择完成后）
-    // =====================================================
-    auto algorithmStart = chrono::steady_clock::now();
 
     // =====================================================
     // 图像处理流水线
@@ -79,7 +79,20 @@ int main(int argc, char *argv[])
     // 4. 连通域百分比过滤处理（基于全图面积百分比过滤）
     Mat finalResult = filterConnectedComponentsByPercent(contourFilled, Config::CONNECTED_COMPONENT_PERCENT);
 
-    // 算法处理完成，记录结束时间
+    // =====================================================
+    // 模板匹配判断 NG/OK
+    // =====================================================
+
+    cout << "\n========== 模板匹配判断 ==========" << endl;
+
+    vector<TemplateMatchResult> matchResults;
+    bool isOK = judgeByTemplateMatch(
+        finalResult,
+        TemplateMatchConfig::TEMPLATE_FOLDER,
+        TemplateMatchConfig::THRESHOLDS,
+        matchResults);
+
+    // 算法处理完成（包含判断逻辑），记录结束时间
     auto algorithmEnd = chrono::steady_clock::now();
     auto totalEnd = chrono::steady_clock::now();
 
@@ -87,59 +100,86 @@ int main(int argc, char *argv[])
     int algorithmMs = chrono::duration_cast<chrono::milliseconds>(algorithmEnd - algorithmStart).count();
     int totalMs = chrono::duration_cast<chrono::milliseconds>(totalEnd - totalStart).count();
 
+    cout << "====================================" << endl;
+    cout << "最终判定: " << (isOK ? "OK" : "NG") << endl;
+    cout << "====================================" << endl;
+
     // 在控制台输出处理时间
     cout << "Algorithm time: " << algorithmMs << "ms" << endl;
-    cout << "Total time: " << totalMs << "ms" << endl; // =====================================================
+    cout << "Total time: " << totalMs << "ms" << endl;
+
+    // =====================================================
     // 结果显示
     // =====================================================
 
-    // 显示6张图片：原图，缩放图，ROI图，二值图，形态学处理，连通域过滤
+    // 显示6张图片：原图，缩放图，二值图，形态学处理，轮廓填充，连通域过滤
     vector<Mat> displayImages = {
         originalImage,  // 1. 原始BGR图像（未缩放）
-        resizedImage,   // 2. 缩放后的完整图像
-        rgbImage,       // 3. ROI选择后的图像（可能是完整缩放图或ROI裁剪图）
-        originalBinary, // 4. HSV二值化图像
-        morphProcessed, // 5. 形态学处理结果
+        resizedImage,   // 2. 缩放后的图像
+        originalBinary, // 3. HSV二值化图像
+        morphProcessed, // 4. 形态学处理结果
+        contourFilled,  // 5. 轮廓填充结果
         finalResult     // 6. 连通域百分比过滤结果
     };
 
     vector<string> displayTitles = {
         "1. Original Image",
         "2. Resized Image",
-        "3. ROI/Processing Area",
-        "4. HSV Binary Mask",
-        "5. Morphological",
+        "3. HSV Binary Mask",
+        "4. Morphological",
+        "5. Contour Filled",
         "6. Final Result"};
 
     // 创建subplot显示 (2行3列布局，显示6张处理步骤图)
     Mat subplotCanvas = createSubplotDisplay(displayImages, displayTitles, 2, 3);
 
-    // 在画布上显示两个关键处理时间
-    putText(subplotCanvas, "Total Time: " + to_string(totalMs) + "ms", Point(10, 30),
+    // 在画布左上角显示处理时间
+    putText(subplotCanvas, "Algorithm: " + to_string(algorithmMs) + "ms", Point(10, 30),
             FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 255, 0), 2);
-    putText(subplotCanvas, "Algorithm Only: " + to_string(algorithmMs) + "ms", Point(10, 60),
-            FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 200, 200), 2);
+    putText(subplotCanvas, "Total: " + to_string(totalMs) + "ms", Point(10, 60),
+            FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 255, 0), 2);
+
+    // 在画布右上角显示 OK/NG 判定结果
+    string judgementText = isOK ? "OK" : "NG";
+    Scalar judgementColor = isOK ? Scalar(0, 255, 0) : Scalar(0, 0, 255); // 绿色=OK, 红色=NG
+
+    // 计算文本尺寸以便右对齐
+    int fontFace = FONT_HERSHEY_SIMPLEX;
+    double fontScale = 2.5;
+    int thickness = 5;
+    int baseline = 0;
+    Size textSize = getTextSize(judgementText, fontFace, fontScale, thickness, &baseline);
+
+    // 右上角位置（留出边距）
+    Point textPos(subplotCanvas.cols - textSize.width - 30, textSize.height + 30);
+
+    // 绘制文本
+    putText(subplotCanvas, judgementText, textPos, fontFace, fontScale, judgementColor, thickness);
 
     // 显示主要结果窗口
     namedWindow("HSV Detection and Processing", WINDOW_AUTOSIZE);
     imshow("HSV Detection and Processing", subplotCanvas);
 
-    // Wait for user to view the subplot
-    waitKey(0);
+    // 等待用户按键
+    int key = waitKey(0);
 
-    // Close the subplot window
-    destroyWindow("HSV Detection and Processing");
+    // Close all windows
+    destroyAllWindows();
 
-    // =====================================================
-    // 交互式颜色分析
-    // =====================================================
+    // 只有按下空格键(32)才进入HSV颜色分析
+    if (key == 32) // 空格键的ASCII码是32
+    {
+        // =====================================================
+        // 交互式颜色分析
+        // =====================================================
 
-    // 转换为HSV用于颜色分析
-    Mat hsvImage;
-    cvtColor(rgbImage, hsvImage, COLOR_BGR2HSV);
+        // 转换为HSV用于颜色分析
+        Mat hsvImage;
+        cvtColor(rgbImage, hsvImage, COLOR_BGR2HSV);
 
-    // 显示交互式颜色分析窗口
-    showColorAnalysis(hsvImage, rgbImage);
+        // 显示交互式颜色分析窗口
+        showColorAnalysis(hsvImage, rgbImage);
+    }
 
     return 0;
 }

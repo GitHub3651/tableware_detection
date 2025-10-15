@@ -3,9 +3,9 @@ chcp 65001 >nul
 setlocal enabledelayedexpansion
 
 REM 配置路径 - 请根据需要修改这两个路径
-set IMAGE_PATH=D:\BaiduNetdiskDownload\project\tableware_detection\image_samples\2\1 (1).jpg
+set IMAGE_PATH=.\image_samples\2\1 (43).jpg
 
-set IMAGE_FOLDER_PATH=D:\BaiduNetdiskDownload\project\tableware_detection\image_samples\2
+set IMAGE_FOLDER_PATH=.\image_samples\2
 echo ===============================================
 echo        餐具检测程序测试脚本
 echo ===============================================

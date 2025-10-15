@@ -3,9 +3,8 @@
 
 namespace Config
 {
-    // 形态学处理参数
-    constexpr int MORPH_OPEN_KERNEL_SIZE = 5;   // 开运算核大小 (去噪)
-    constexpr int MORPH_CLOSE_KERNEL_SIZE = 19; // 闭运算核大小 (填充)
+    // 形态学处理参数 - 只使用膨胀操作
+    constexpr int MORPH_DILATE_KERNEL_SIZE = 4; // 膨胀核大小 (连接断裂区域)
 
     // 轮廓和连通域过滤参数
     constexpr double MIN_CONTOUR_AREA = 200.0;          // 最小轮廓面积阈值
@@ -22,13 +21,31 @@ namespace Config
 
     // 方案A：预编译优化的多HSV检测 (针对木筷子+黑勺子优化)
     constexpr int HSV_RANGES[][6] = {
-        {10, 25, 50, 130, 100, 255}, // 木色筷子: 橙黄色调，中高饱和度，较高亮度
-        {0, 180, 0, 80, 0, 60},      // 黑色勺子: 全色调，任意饱和度，低亮度
+        {10, 25, 50, 250, 0, 255}, // 木色筷子: 橙黄色调，中高饱和度，较高亮度
+        {0, 180, 0, 90, 0, 60},    // 黑色勺子: 全色调，任意饱和度，低亮度
         // {8, 25, 30, 150, 80, 200}    // 深木色备用: 更严格的木色范围
         // 添加更多物体只需在这里加一行，数量会自动计算
     };
 
     constexpr int RANGE_COUNT = sizeof(HSV_RANGES) / sizeof(HSV_RANGES[0]); // 自动计算HSV范围数量
+}
+
+// 模板匹配配置
+namespace TemplateMatchConfig
+{
+    // 模板文件夹路径
+    const std::string TEMPLATE_FOLDER = "image_samples/2/muban";
+
+    // 旋转角度配置（用于处理筷子等细长物体的轻微倾斜）
+    const double ROTATION_MIN = -6.0; // 最小旋转角度（度）
+    const double ROTATION_MAX = 6.0;  // 最大旋转角度（度）
+    const double ROTATION_STEP = 3.0; // 角度步长（度）
+    // 实际测试角度：-15, -10, -5, 0, 5, 10, 15（7个角度）
+
+    // 每个模板的阈值（按文件名顺序：1.jpg, 2.jpg, ...）
+    // 使用像素相似度匹配（TM_SQDIFF_NORMED），范围 [0, 1]，1.0=完全相同
+    // 建议阈值：0.85-0.95
+    const std::vector<double> THRESHOLDS = {0.85, 0.85};
 }
 
 #endif // CONFIG_CONSTANTS_H

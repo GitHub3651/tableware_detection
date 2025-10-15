@@ -34,4 +34,28 @@ Mat filterConnectedComponentsByPercent(const Mat &binaryImage, double minPercent
 // CLAHE对比度限制自适应直方图均衡
 Mat enhanceContrast_CLAHE(const Mat &inputImage);
 
+// ==================== 模板匹配判断 ====================
+
+// 单个模板匹配结果
+struct TemplateMatchResult
+{
+    string filename; // 模板文件名
+    double score;    // 匹配得分
+    bool passed;     // 是否通过
+};
+
+/**
+ * @brief 模板匹配判断（极简版）
+ * @param resultImage 检测结果图像（二值图）
+ * @param templateFolder 模板文件夹路径
+ * @param thresholds 每个模板的阈值（按文件名顺序）
+ * @param results 输出：每个模板的匹配结果
+ * @return true=全部通过(OK), false=有失败(NG)
+ */
+bool judgeByTemplateMatch(
+    const Mat &resultImage,
+    const string &templateFolder,
+    const vector<double> &thresholds,
+    vector<TemplateMatchResult> &results);
+
 #endif // IMAGE_PROCESSING_H
