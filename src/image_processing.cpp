@@ -559,3 +559,5 @@ bool judgeByTemplateMatch(
 
     return allPassed;
 }
+
+// ==================== 模板匹配判断实现 ====================

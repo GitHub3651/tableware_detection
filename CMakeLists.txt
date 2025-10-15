@@ -25,11 +25,6 @@ add_executable(tableware_detection
     src/main.cpp
     src/image_processing.cpp
     src/display.cpp
-    src/roi_selector.cpp
-    src/illumination_processing.cpp
-    src/dehazing_processing.cpp
-    src/hsv_normalization.cpp
-    # src/hsv_lut.cpp  # LUT功能暂时不使用，但保留文件
 )
 
 # 链接OpenCV库

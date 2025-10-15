@@ -14,7 +14,6 @@
 
 #include "image_processing.h"
 #include "display.h"
-#include "roi_selector.h"
 #include "config_constants.h"
 #include <iostream>
 #include <string>
